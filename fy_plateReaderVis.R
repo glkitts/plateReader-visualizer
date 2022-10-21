@@ -89,6 +89,7 @@ arg_message <- c(
   paste0("INPUT DATA PATH: ", argv$data),
   paste0("METADATA PATH: ", argv$metadata),
   paste0("OUTPUT PATH: ", argv$output),
+  paste0("REPEAT TIME: ", argv$repeatTime, "min"),
   paste0("lux=", argv$lux, "  bc34=", argv$bc34, "  OD=", !argv$noGrowth), 
   "\n------------\n"
   )
@@ -273,48 +274,6 @@ curve_sample <- function(data, readout_col, readout_lbl = NULL) {
   return(p)
 }
 
-# curve_hcr_wells <- function(d, readout_col) {
-#   
-#   # x <- c(
-#   #   "Well",
-#   #   paste0(readout_col),
-#   #   "OD",
-#   #   "hour"
-#   # )
-#   # 
-#   # y <- sprintf(
-#   #   "{point.%s:.2f}", 
-#   #   c("Well",
-#   #     readout_col,
-#   #     "OD",
-#   #     "hour"
-#   #   ))
-#   
-#   # tltip <- tooltip_table(x, y)
-#   
-#   p <- d %>% hchart("line",
-#                     hcaes(
-#                       x = hour, 
-#                       y = {{ readout_col }},
-#                       group = Well
-#                     ),
-#                     showInLegend = F)
-#   # ) %>%
-#   #   hc_tooltip(
-#   #     useHTML = TRUE,
-#   #     headerFormat = "",
-#   #     pointFormat = tltip
-#   #   )
-#   
-#   p %>%
-#     htmlwidgets::saveWidget(
-#       filename = paste0(out_path, "_", 
-#                         rlang::englue("{{ readout_col }}"), "curve_interactive.html"), 
-#       selfcontained = F
-#     )
-#   
-# }
-
 
 data_list <- list()
 plot_list <- list()
@@ -340,6 +299,8 @@ d <- d %>%
 ## If the user sets the data to contain Bc34 or Lux, parse and visualize those based on the expected columns
 if (argv$bc34 == TRUE) {
   
+  # writeLines("\n Generating Bc34 visualizations \n")
+  
   readout_lbl <- "RFI (TurboRFP/Amcyan)"
   
   d <- d %>%
@@ -361,14 +322,47 @@ if (argv$bc34 == TRUE) {
       curve_sample(
         readout_col = RFI, readout_lbl = readout_lbl)
     plot_list <- p %>% append(plot_list)  
-    
   }
+  
+  
+  
+  ## Highcharter 
+  tltip <- c("Well", "RFI", "OD", "hour")
+  
+  x <- tltip
+  
+  y <- sprintf(
+    "{point.%s:.2f}",
+    tltip)
+  
+  tltip <- tooltip_table(x, y)
+  
+  p <- d %>% 
+    hchart(
+      "line",
+      hcaes(
+        x = hour, y = RFI, 
+        group = Well), 
+      showInLegend = F) %>% 
+    hc_tooltip(
+      useHTML = TRUE,
+      headerFormat = "",
+      pointFormat = tltip
+    )
+  
+  p %>%
+    htmlwidgets::saveWidget(
+      file = paste0(out_path, "_", x[2], "_curveWells_interactive.html"),
+      selfcontained = F
+    )
   
 }
 
 
 
 if (argv$lux == TRUE) {
+  
+  # writeLines("\n Generating RLU visualizations \n")
   
   readout_lbl <- "RLU (Lum/OD)"
   
@@ -395,7 +389,37 @@ if (argv$lux == TRUE) {
     
   }
   
-  # d %>% curve_hcr_wells(readout_col = RLU)
+  
+  ## Highcharter 
+  
+  tltip <- c("Well", "RLU", "OD", "hour")
+  
+  x <- tltip
+  
+  y <- sprintf(
+    "{point.%s:.2f}",
+    tltip)
+  
+  tltip <- tooltip_table(x, y)
+  
+  p <- d %>% 
+    hchart(
+      "line",
+      hcaes(
+        x = hour, y = RLU, 
+        group = Well), 
+      showInLegend = F) %>% 
+    hc_tooltip(
+      useHTML = TRUE,
+      headerFormat = "",
+      pointFormat = tltip
+    )
+  
+  p %>%
+    htmlwidgets::saveWidget(
+      file = paste0(out_path, "_", x[2], "_curveWells_interactive.html"),
+      selfcontained = F
+    )
   
   
 }
@@ -405,6 +429,8 @@ if (argv$lux == TRUE) {
 
 ## Always plot growth regardless, unless explicitly turned off  
 if (argv$noGrowth == FALSE){
+  
+  # writeLines("\n Generating OD visualizations \n")
   
   readout_lbl <- if_else(argv$OD450 == F, 
                         "OD600",
@@ -431,6 +457,36 @@ if (argv$noGrowth == FALSE){
         readout_col = OD, readout_lbl = readout_lbl)
     plot_list <- p %>% append(plot_list)  
   }
+  
+  ## Highcharter 
+  tltip <- c("Well", "OD", "hour")
+  
+  x <- tltip
+  
+  y <- sprintf(
+    "{point.%s:.2f}",
+    tltip)
+  
+  tltip <- tooltip_table(x, y)
+  
+  p <- d %>% 
+    hchart(
+      "line",
+      hcaes(
+        x = hour, y = OD, 
+        group = Well), 
+      showInLegend = F) %>% 
+    hc_tooltip(
+      useHTML = TRUE,
+      headerFormat = "",
+      pointFormat = tltip
+    )
+  
+  p %>%
+    htmlwidgets::saveWidget(
+      file = paste0(out_path, "_", x[2], "_curveWells_interactive.html"),
+      selfcontained = F
+    )
 }
 
 
@@ -449,6 +505,7 @@ if (is.na(metadata_path)) {
 
 
 sum_cols <- c("OD", "RLU", "RFI")
+
 d_sum <- d_sum %>% 
   summarise(
     across(starts_with(sum_cols), 
