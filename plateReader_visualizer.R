@@ -257,7 +257,7 @@ curve_sample <- function(data, readout_col, readout_lbl = NULL) {
       fun = "mean",
       geom = "line"
     ) +
-    scale_color_manual(name = NULL, aesthetics = c("color", "fill")) +
+    # scale_color_manual(name = NULL, aesthetics = c("color", "fill")) +
     theme(legend.position = "right", legend.direction = "vertical") + 
     labs(y = readout_lbl)
   
